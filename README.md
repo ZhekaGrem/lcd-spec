@@ -106,11 +106,11 @@ message you send:
 | Signal | Weight | Example |
 |---|---|---|
 | Swearing, not addressed to the agent | 0.5 | «бля, забув сказати» |
-| Swearing addressed to the agent | 1.0 | «ти що, охуїв?» |
+| Swearing addressed to the agent | 1.0 | «ти що, наробив?» |
 | Blame, no swearing needed | 1.0 | «ти знову все зламав», "I told you not to…" |
 | The same failure again | 1.0 | «досі не працює», "still failing with the same error" |
 | Mild negativity | 0.5 | «маячня», "garbage" |
-| Praise with swearing, or an ordinary bug report | 0 | «заїбісь, працює!», "the button doesn't work, please fix" |
+| Praise with swearing, or an ordinary bug report | 0 | «все добре, працює!», "the button doesn't work, please fix" |
 
 It detects Ukrainian, Russian and English, including dot/dash obfuscation and latin
 look-alike letters. Code blocks, quoted lines and talk about the detector itself are ignored.
@@ -213,8 +213,7 @@ lcd-spec stands on:
 - [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (MIT): brainstorming,
   writing plans, subagent-driven development;
 - [mattpocock/skills](https://github.com/mattpocock/skills) (MIT): grilling;
-- ideas from [Z.A.E.B.A.L.](https://github.com/howdeploy/Z.A.E.B.A.L), with no text or code
-  copied.
+
 
 Details are in [NOTICE.md](NOTICE.md).
 
