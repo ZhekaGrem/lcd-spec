@@ -1,0 +1,73 @@
+# English cues. Format and section meaning: see uk.txt.
+
+[profanity]
+\bfuck
+\bshit
+\bwtf\b
+\bbullshit
+\bcrap\b
+\bdamn
+\bidiot
+\bstupid
+\bdumb\b
+\bmoron
+\bffs\b
+
+[praise]
+\bfucking (?:great|awesome|amazing|nice|good|perfect|brilliant|finally)
+\bhell yeah
+\bdamn (?:good|nice|fine)
+(?<!n't )(?<!not )\bworks now\b
+\bit works\b
+\bthank
+\bperfect\b
+\bawesome\b
+\bgreat\b
+\bnice\b
+
+[directed]
+\byou\b
+\byour\b
+\byou're\b
+\bclaude\b
+
+[blame]
+\byou (?:broke|deleted|removed|ignored|overwrote|made (?:it|this) worse|keep breaking|keep ignoring|didn'?t (?:listen|read)|don'?t listen|aren'?t listening|are not listening|never listen)
+\bi (?:told|asked) you\b
+\bi said (?:not|don'?t)\b
+\bhow many times\b
+\bwho asked you\b
+\bi (?:never|didn'?t) ask(?:ed)? (?:for|you)\b
+\bstop (?:making things up|inventing|hallucinating)
+
+[failure]
+\bnot working\b
+\bdoesn'?t work\b
+\bdoes not work\b
+\bbroken\b
+\bfails?\b
+\bfailing\b
+\berror\b
+\bnothing changed\b
+\bdidn'?t help\b
+\bworse\b
+\bsame (?:error|issue|problem|thing|bug)\b
+
+[repeat]
+\bagain\b
+\bstill\b
+\b(?:\d+(?:st|nd|rd|th)?|third|fourth|fifth|nth) time\b
+
+[negative]
+\bnonsense\b
+\bgarbage\b
+\bterrible\b
+\bawful\b
+\bhorrible\b
+\buseless\b
+\bsucks\b
+\bwhat the hell\b
+\bugh\b
+
+[ack]
+^(?:ok|okay|fine|yes|sure)?[,.!\s]*(?:continue|go on|go ahead|proceed|carry on|as planned|agreed)\b

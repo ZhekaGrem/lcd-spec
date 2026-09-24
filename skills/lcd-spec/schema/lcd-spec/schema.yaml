@@ -1,0 +1,152 @@
+name: lcd-spec
+version: 1
+description: >
+  lcd-spec workflow - proposal → specs → design → grilling → plan → tasks → audit → review.
+  Implementation is blocked until the decisions are grilled, the plan is written, the
+  pre-apply audit passes and the user has accepted or declined a perspective review.
+  Driven by the lcd-spec skill; gate.py checks content.
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Why the change is needed and which capabilities it touches
+    template: proposal.md
+    instruction: >
+      Written by the lcd-spec skill, stage 2, after the design was agreed in dialogue
+      (stage 1). Before writing, read openspec/incidents.md and apply the lessons that
+      touch this area.
+
+
+      Sections:
+
+      - **Why**: 1-2 sentences on the problem or opportunity. Why now?
+
+      - **What Changes**: bullet list of changes; mark breaking ones **BREAKING**.
+
+      - **Capabilities**: New Capabilities (each becomes specs/<name>/spec.md, kebab-case)
+      and Modified Capabilities (existing names from openspec/specs/ whose requirements
+      change). This section is the contract between proposal and specs.
+
+      - **Impact**: affected code, APIs, dependencies, systems.
+
+      - **Non-goals**: what this change deliberately does not do.
+
+
+      Keep it to 1-2 pages. The "how" belongs in design.md.
+    requires: []
+
+  - id: specs
+    generates: specs/**/*.md
+    description: Delta specifications - WHAT the system must do
+    template: spec.md
+    instruction: >
+      One spec file per capability named in the proposal.
+
+
+      Delta operations (## headers): ADDED Requirements, MODIFIED Requirements (MUST
+      contain the full updated requirement copied from openspec/specs/<capability>/spec.md
+      - a partial MODIFIED block silently deletes the rest at archive time), REMOVED
+      Requirements (with **Reason** and **Migration**), RENAMED Requirements (FROM:/TO:).
+
+
+      Each requirement: `### Requirement: <name>` + text using SHALL/MUST. Each scenario:
+      `#### Scenario: <name>` (exactly four #) with WHEN/THEN bullets. Every requirement has
+      at least one scenario. When a requirement replaces a predicate ("on every screen",
+      "everywhere active is used"), list the affected surfaces by name, found by grep,
+      not from memory.
+    requires:
+      - proposal
+
+  - id: design
+    generates: design.md
+    description: HOW - decisions with alternatives, risks, migration
+    template: design.md
+    instruction: >
+      Required in lcd-spec (grilling needs the decisions written down). Scale it to the
+      change: a few lines for a small one.
+
+
+      Sections: Context, Goals / Non-Goals, Decisions (each with the alternatives
+      considered and why this one), Risks / Trade-offs ([Risk] → Mitigation), Migration
+      Plan (if any), Open Questions. The pre-apply audit later appends an "Audit findings"
+      section here; keep it when rewriting the document.
+    requires:
+      - proposal
+
+  - id: grilling
+    generates: grilling.md
+    description: Decision review with the user - every branch resolved, verdict recorded
+    template: grilling.md
+    instruction: >
+      Produced ONLY by the lcd-spec skill, stage 3 (grill), in a live interview with the
+      user: one question at a time, each with a recommended answer; facts are looked up in
+      the code, decisions are asked. Do not fill this file from your own judgment - an
+      unasked decision is not a decision. "Verdict: PASS" is written only after the user
+      confirms shared understanding, then `gate.py stamp <change> grilling`.
+    requires:
+      - specs
+      - design
+
+  - id: plan
+    generates: plan.md
+    description: Detailed implementation plan - bite-sized TDD steps per task
+    template: plan.md
+    instruction: >
+      Written by the lcd-spec skill, stage 4. Every task is a `### Task N.M: <name>`
+      section with Files, Interfaces, and numbered steps (failing test, run it, minimal
+      code, run it, commit) containing real code and exact commands. No placeholders
+      (TBD, TODO, "add error handling", "similar to Task N"). Steps are NOT checkboxes -
+      progress is tracked in tasks.md.
+    requires:
+      - grilling
+
+  - id: tasks
+    generates: tasks.md
+    description: Short progress tracker mirroring plan.md numbering
+    template: tasks.md
+    instruction: >
+      A tracker, not a plan: one `- [ ] N.M <one-line title>` per `### Task N.M` in
+      plan.md, grouped under `## N. <group>` headings. The numbers must match plan.md
+      exactly (gate.py checks both directions). A task is ticked only after its review
+      comes back clean in stage 6.
+    requires:
+      - plan
+
+  - id: audit
+    generates: audit.md
+    description: Pre-apply audit - every factual claim re-checked against the code
+    template: audit.md
+    instruction: >
+      Produced ONLY by the lcd-spec skill, stage 5 (pre-apply audit), with two independent
+      audit subagents. Findings are grouped Blockers / Serious / Minor with path:line
+      evidence; "What I did NOT verify" is mandatory. "Verdict: PASS" only when every
+      blocker is resolved through an artifact update, then `gate.py stamp <change> audit`.
+    requires:
+      - tasks
+
+  - id: review
+    generates: review.md
+    description: Optional multi-perspective review of the plan (tester, user, programmer, architect)
+    template: review.md
+    instruction: >
+      Produced ONLY by the lcd-spec skill, stage 5b. Ask the user whether to review the plan
+      from other perspectives and which roles to use. Declined: write "Verdict: SKIPPED" with
+      the date. Accepted: one deep-reasoning reviewer subagent per chosen role, merged
+      findings under Must fix / Should fix / Consider, fixes applied to the artifacts
+      (re-stamp the audit if they touched it), then "Verdict: PASS" once every Must fix is
+      ticked.
+    requires:
+      - audit
+
+apply:
+  requires:
+    - grilling
+    - plan
+    - tasks
+    - audit
+    - review
+  tracks: tasks.md
+  instruction: |
+    Implement through the lcd-spec skill, stage 6 (subagent-driven execution), not task by
+    task inline. First run `python <lcd-spec>/scripts/gate.py check <change-dir> apply`;
+    if it prints FAIL, stop and fix the named stage. Tick a task in tasks.md only after its
+    task review is clean.

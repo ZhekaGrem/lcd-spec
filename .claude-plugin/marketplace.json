@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "lcd-spec",
+  "owner": {
+    "name": "ZhekaGrem"
+  },
+  "metadata": {
+    "description": "lcd-spec - a hard-gated OpenSpec workflow: design, grill, plan, audit, subagent-driven apply, archive."
+  },
+  "plugins": [
+    {
+      "name": "lcd-spec",
+      "source": "./",
+      "description": "From idea to archived change: every decision grilled with you, every claim audited against the code, every task implemented by a subagent and reviewed before the next."
+    }
+  ]
+}

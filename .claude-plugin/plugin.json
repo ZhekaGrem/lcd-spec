@@ -1,0 +1,19 @@
+{
+  "name": "lcd-spec",
+  "description": "Spec workflow on top of OpenSpec with hard gates: dialogue design, grilling of every decision, a detailed TDD plan, a pre-apply audit of every claim against the code, subagent-driven implementation with a review per task, and archiving that keeps specs, transcripts and plans together. Tracks project mistakes in openspec/incidents.md, including frustration signals (UA/RU/EN) from the user.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ZhekaGrem"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skills",
+    "openspec",
+    "spec-driven-development",
+    "planning",
+    "grilling",
+    "audit",
+    "subagents",
+    "tdd"
+  ]
+}

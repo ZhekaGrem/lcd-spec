@@ -1,0 +1,16 @@
+{
+  "description": "lcd-spec: scores each user message for frustration (UA/RU/EN swearing, blame, repeated failures) and, past a threshold, points the agent at the incident-audit protocol.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/lcd-spec/scripts/frustration.py\" 2>/dev/null || python \"${CLAUDE_PLUGIN_ROOT}/skills/lcd-spec/scripts/frustration.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
