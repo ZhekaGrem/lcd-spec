@@ -6,7 +6,9 @@
 - switches openspec/config.yaml to `schema: lcd-spec` for NEW changes (existing changes
   keep the schema recorded in their own .openspec.yaml);
 - creates openspec/incidents.md if it does not exist;
-- adds the per-change scratch directory to .gitignore.
+- adds the per-change scratch directory to .gitignore;
+- writes openspec/roadmap.md from the project's changes and commits (its hand-written
+  'Planned' section is kept).
 
 Idempotent. Usage: python install.py <project-root>
 """
@@ -16,6 +18,8 @@ import re
 import shutil
 import sys
 from pathlib import Path
+
+import roadmap
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 SCHEMA_SRC = SKILL_DIR / "schema" / "lcd-spec"
@@ -56,6 +60,8 @@ def install(project: Path) -> list:
         sep = "" if existing.endswith("\n") or not existing else "\n"
         gitignore.write_text(existing + sep + GITIGNORE_LINE + "\n", encoding="utf-8")
         done.append(f".gitignore += {GITIGNORE_LINE}")
+
+    done.append(f"roadmap -> {roadmap.write(project)}")
     return done
 
 

@@ -20,12 +20,22 @@ only a short note in chat that the next stages lean on.
 5. **The code the request touches.** Enough to know whether the flow exists already and what
    pattern it follows. Plus `git log --oneline -15` for recent motion in that area. Delegate
    a broad sweep to an Explore subagent and keep only its conclusion.
+6. **`openspec/roadmap.md`, only when a question is still open.** If the steps above did not
+   tell you whether the requested feature already exists, or the request sounds like a bug
+   that may have been fixed before, refresh the index and search it:
+   `python <skill>/scripts/roadmap.py <project-root>`, then Grep the file for the feature's
+   or the bug's words. It holds one line per archived change, open change and `feat` / `fix`
+   commit, and each hit names the change directory or the commit to read. Do not read the
+   file through, and do not open it when the specs already answered: it grows with the
+   project and is an index, not context.
 
 ## Scope check
 
 If the request describes several independent subsystems ("chat, billing and analytics"),
 say so now and propose splitting it into several changes, each with its own full cycle.
-Agree the order with the user and take the first one through the stages.
+Agree the order with the user and take the first one through the stages. Write the parts
+that wait as one line each under `## Planned` in `openspec/roadmap.md`: that section is
+kept by hand, and it is where an idea without a change stays findable.
 
 If the request is a one-line fix with no decisions in it, say that lcd-spec is heavier
 than the task needs, and let the user choose. If they want lcd-spec anyway, run the full
@@ -37,6 +47,8 @@ Post 5–10 lines in chat:
 
 - what exists (capabilities, code paths) and what does not;
 - relevant lessons from incidents.md (INC ids);
+- what the roadmap showed, if you had to search it (the change or commit that already did
+  this, or nothing found);
 - overlapping open changes and what they claim;
 - the scope verdict (one change / split proposed).
 
