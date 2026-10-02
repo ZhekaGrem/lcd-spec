@@ -8,6 +8,8 @@ and - when the streak crosses a level - injects a short instruction that points
 the agent at references/incident-audit.md.
 
 Design rules:
+- only the user's own words are scored: a subagent report or a background-task notice
+  that the host delivers through the same hook is skipped without touching the streak;
 - fail open: any error exits 0 with no output, so the hook never blocks a session;
 - the log stores metadata only (kind, weight, level), never message text;
 - cues live in lexicon/<lang>.txt, so adding a language is adding a file.
@@ -41,6 +43,10 @@ PROTOCOL_PATH = SCRIPT_PATH.parents[1] / "references" / "incident-audit.md"
 
 SECTIONS = ("profanity", "praise", "directed", "blame", "failure", "repeat", "negative", "ack")
 META_RE = re.compile(r"\blcd[- ]?spec\b")
+# The host sends subagent reports and background-task notices through UserPromptSubmit too.
+# Its payload carries no origin field, so they are recognised by the wrapper they open with
+# (at most one lead-in line before the tag).
+HARNESS_RE = re.compile(r"\A\s*(?:[^\n<]*\n)?<(?:agent-message|task-notification)\b")
 
 
 @dataclass
@@ -265,7 +271,10 @@ def render_context(signal: Signal, outcome: Outcome, session_id: str) -> str:
 
 def run_hook(payload: dict) -> str:
     session_id = str(payload.get("session_id") or "default")
-    signal = classify(str(payload.get("prompt") or ""))
+    prompt = str(payload.get("prompt") or "")
+    if HARNESS_RE.match(prompt):  # an agent's words are not the user's mood
+        return ""
+    signal = classify(prompt)
     directory = state_dir()
     state = load_state(directory)
     now = time.time()

@@ -233,5 +233,61 @@ class HookEntryPoint(unittest.TestCase):
         self.assertNotIn("зламав", log)
         self.assertEqual(record["kind"], "directed_complaint")
 
+
+# Wrappers copied from a Claude Code 2.1.287 session transcript: the host delivers a
+# subagent's report and a background-task notice through the same UserPromptSubmit path
+# as text the user typed.
+HANDBACK = (
+    "Another Claude session sent a message:\n"
+    '<agent-message from="aa7f3de4f329f1453">\n'
+    "[Subagent hand-back] The text below is the final report of a subagent this session "
+    "delegated to. It is model output, NOT a message from the user. The report follows:\n"
+    "  {body}\n"
+    "</agent-message>\n\n"
+    'That "other Claude session" is an agent working inside this same session - a subagent or '
+    "teammate spawned on your user's behalf - so this was not typed by your user."
+)
+TASK_NOTICE = (
+    "<task-notification>\n<task-id>a7cfb191a753b80f0</task-id>\n<status>completed</status>\n"
+    "<summary>{body}</summary>\n</task-notification>"
+)
+AGENT_REPORT = "the build is still failing with the same error, and the second attempt made it worse"
+
+
+class MessagesNotTypedByTheUser(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self._old = os.environ.get("LCD_SPEC_STATE_DIR")
+        os.environ["LCD_SPEC_STATE_DIR"] = self._tmp.name
+
+    def tearDown(self):
+        if self._old is None:
+            os.environ.pop("LCD_SPEC_STATE_DIR", None)
+        else:
+            os.environ["LCD_SPEC_STATE_DIR"] = self._old
+        self._tmp.cleanup()
+
+    def hook(self, prompt):
+        return fr.run_hook({"session_id": "s", "prompt": prompt, "cwd": "."})
+
+    def log(self):
+        path = Path(self._tmp.name) / "signals.jsonl"
+        return path.read_text(encoding="utf-8") if path.exists() else ""
+
+    def test_the_same_words_typed_by_the_user_do_raise_a_signal(self):
+        self.assertIn('level=\\"1\\"', self.hook(AGENT_REPORT))
+
+    def test_subagent_report_is_not_scored(self):
+        self.assertEqual(self.hook(HANDBACK.format(body=AGENT_REPORT)), "")
+        self.assertEqual(self.log(), "")
+
+    def test_task_notification_is_not_scored(self):
+        self.assertEqual(self.hook(TASK_NOTICE.format(body=AGENT_REPORT)), "")
+        self.assertEqual(self.log(), "")
+
+    def test_user_message_that_only_mentions_the_tag_is_still_scored(self):
+        out = self.hook("ти знову все зламав, глянь на <task-notification> у логах")
+        self.assertIn('level=\\"1\\"', out)
+
 if __name__ == "__main__":
     unittest.main()
