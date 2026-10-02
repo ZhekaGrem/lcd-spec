@@ -47,7 +47,8 @@ dismiss a real complaint in the same message: still address it.
    Run it.
 5. **Report to the user**, briefly: the wrong belief (or `not established`), the divergence
    point, the check that decided it, and the next action that changes because of it.
-6. Write the incidents.md entry (below). Continue the work within the existing authorization.
+6. Record the incident (below: find, then bump or add, then validate). Continue the work
+   within the existing authorization.
 
 ## Level 2: repeated signal
 
@@ -111,16 +112,62 @@ partial or unverified).
 
 ## Recording the incident
 
-Append to `openspec/incidents.md` (create it from `references/incidents-template.md` if
-missing):
+This procedure applies to every incident, whatever raised it: a frustration audit, an audit
+blocker, a fix loop that hit three rounds, a Critical in the final review, a bug after
+archive. The log is `openspec/incidents.md` (create it from
+`references/incidents-template.md` if missing); `LOG` below is that path.
 
-- `Signal: frustration L<n>` or `manual audit`;
+**1. Find: has this happened before?**
+
+```
+python <skill>/scripts/incidents.py find LOG "<what happened, in a sentence>" [--class <class>]
+```
+
+It prints the entries that share words with your sentence, the closest first, each with
+how often it was seen. Read the candidates. A repeat is the same wrong belief in the same
+kind of situation, even in another file or another change. An empty result means a new
+incident.
+
+**2a. A repeat: count it, do not write it again.**
+
+```
+python <skill>/scripts/incidents.py bump LOG <INC-id>
+```
+
+The entry gets `Recurrence` and `Seen`. A second entry for the same mistake would hide that
+it keeps happening. The lesson as written did not prevent the repeat, so say why (it never
+reached the stage that needed it, or it was read and not acted on) and change something:
+add `Needed at` / `Paths` so the lesson arrives where the mistake is made, rewrite it so it
+can be checked, or turn it into a test, a lint rule, a hook or a gate check and retire the
+line. Tell the user it is a repeat and what you changed.
+
+**2b. A new incident: add an entry** under `## Entries`, format in the file:
+
+- `Signal: frustration L<n>` or `manual audit` for this protocol; the other triggers use
+  their own (`audit blocker`, `review cap`, `final review`, `perspective review`,
+  `test failure`, `user report`);
 - `Change:` the active lcd-spec change if any, and the `Stage:` you were in;
-- `Wrong belief`, `Evidence`, `Class` (e.g. written-not-consumed, misread-request,
-  wrong-runtime, syntax-roulette, rot, stillborn);
+- `Wrong belief`, `Evidence`, and one `Class`. The named patterns above map to
+  `written-not-consumed`, `wrong-runtime` (healthy is not serving), `syntax-roulette`,
+  `unverified-claim` (hallucinated correctness), `proxy-test` and `scope-creep` (invented
+  scope); the pre-apply audit adds `rot` and `stillborn`; a misunderstood request is
+  `misread-request`;
 - `Fix` and one **Lesson** in the imperative, one that a future spec, grill, plan or audit can
-  act on ("Before prescribing a cache, name its invalidator and its delay in the spec").
+  act on ("Before prescribing a cache, name its invalidator and its delay in the spec");
+- `Trigger`: the situation right before the mistake. The next `find` matches against it;
+- `Needed at`, `Paths`, `Stack` when the lesson is about particular stages or files. Without
+  them it lands in every plan and every task brief, and a brief full of pitfalls that do not
+  apply teaches the implementer to skip the section.
 
-Add the lesson to the Lessons index. If the wrong belief is not established, still record the
-incident with `Wrong belief: not established` and what is still unverified. A repeat of the
-same symptom later starts from this entry.
+Add the lesson to the Lessons index as `- <INC-id> - <lesson>`. If the wrong belief is not
+established, still record the incident with `Wrong belief: not established` and what is
+still unverified. A repeat of the same symptom later starts from this entry.
+
+**3. Validate.**
+
+```
+python <skill>/scripts/incidents.py validate LOG
+```
+
+Fix what it reports before you continue: an entry with a mistyped stage or without an index
+line is one that the plan gate and the task briefs never show to anyone.

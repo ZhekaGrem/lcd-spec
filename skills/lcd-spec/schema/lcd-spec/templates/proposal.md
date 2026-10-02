@@ -21,3 +21,7 @@
 ## Impact
 
 <!-- Affected code, APIs, dependencies, systems -->
+
+## Non-goals
+
+<!-- What this change deliberately does not do. -->

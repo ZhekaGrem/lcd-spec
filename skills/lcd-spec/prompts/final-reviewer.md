@@ -14,7 +14,10 @@ prompt: |
   Ledger with deferred minors, parked findings and rulings:
   openspec/changes/[CHANGE]/ledger.md
   Package (merge-base [BASE_SHA]..[HEAD_SHA]): [DIFF_FILE]
-  Verification output the controller ran: [VERIFICATION_OUTPUT_FILE_OR_TEXT]
+  Its "Independent run" section holds the plan's Verification commands as a script ran them
+  on this branch: exit codes, raw output, and whether the code changed since. It is the
+  only test evidence. `Status: FAIL` there (a command failed, the run is missing, or it is
+  older than the code) means the change is not ready to archive.
 
   Read-only: inspect with git show/diff/log. Never move HEAD on this checkout. If you need a
   checkout of another revision, use a separate worktree in a temp directory. Do not dispatch
@@ -31,7 +34,7 @@ prompt: |
   - cross-task integration: interfaces agree, and no task undid another's work;
   - error handling, security, migrations and backward compatibility, concurrency where it
     applies;
-  - tests verify behaviour, and the verification output is clean.
+  - tests verify behaviour, and the independent run is green and its output clean.
 
   Before your verdict, list under "Declined to judge" every behaviour you set aside as
   outside the spec, with the reason. Empty means you set nothing aside.

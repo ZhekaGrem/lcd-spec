@@ -28,23 +28,39 @@ watch it fail → minimal code → run it and watch it pass → commit.
 
 ## plan.md
 
-Use the schema template. Required parts:
+Use the schema template. Required parts (gate.py fails the plan when Global Constraints,
+Verification or File Structure is missing or empty, or a task lacks Files or Interfaces):
 
 - **Header**: Goal, Architecture, Tech Stack, Spec (the change's own files).
 - **Global Constraints**: the spec's project-wide requirements (versions, formats, naming,
   limits), one line each, values copied verbatim. Every task inherits them, and the reviewer
   gets them as its lens.
 - **Verification**: the commands that prove the whole change (tests, typecheck, lint, build),
-  taken from the project's real scripts.
+  taken from the project's real scripts. One list item per command, the command in
+  backticks. `verify_run.py` runs exactly these in stage 6, from the project root, and the
+  archive gate needs them green. So each command has to end on its own (`vitest run`, not
+  `vitest`; no dev server), ask nothing, and exit non-zero when it fails. gate.py fails a
+  Verification it can find no command in.
 - **Review Focus**: up to five inputs or failure modes the spec implies but no test covers
   yet, most likely to bite a real user first. The spec says what the software must do,
   and its silence about an input is not permission to break on it. Add the test for each line
   to the task that owns the code.
+- **Lessons applied**: re-read the Lessons index of `openspec/incidents.md` now (stage 0 was
+  a while ago and the log may have grown). One line per active lesson: the task that handles
+  it, or `not applicable - <why>`. A lesson is handled by a step or a test in a task, not by
+  the line itself. gate.py fails the plan while an active lesson has no line.
+- **File Structure**: the map from "Before writing tasks", one line per file.
 - **Tasks**: `### Task N.M: <name>`, each with:
   - **Files**: exact paths to create, modify (with line ranges) and test;
   - **Interfaces**: what it consumes from earlier tasks and produces for later ones, with
     exact names and types. An implementer sees only their own task, and this is how they
-    learn the neighbours' signatures;
+    learn the neighbours' signatures. A task that shares nothing writes `none`;
+  - **Verify**: the commands that prove this task once it is done, in the same format as
+    Verification: normally the task's own test file or module, run to the end. After the
+    implementer reports, `verify_run.py` runs them and the reviewer reads that output
+    instead of the implementer's summary. A task without the block gets the whole
+    Verification list run after it: correct, and slow on a large suite. A step's RED command
+    never goes here, it is meant to fail;
   - **Steps**: numbered `**Step K: …**` paragraphs, not checkboxes, with real code and
     exact commands with expected output.
 - If a task depends on a moving number (a migration version, a sequence id), add a
@@ -75,6 +91,8 @@ count and make the progress meaningless.
    not `clearFullLayers` in 2.1).
 3. **Review Focus**: each line has its test in an owning task.
 4. **Grilling decisions**: each decision in grilling.md shows up where it applies.
+5. **Lessons**: each "Task N.M" named under Lessons applied really contains the step or test
+   that prevents the incident.
 
 For a plan over ~8 tasks, or one crossing several modules, also dispatch a plan reviewer
 (`prompts/plan-reviewer.md`, standard model) and fix what it finds.

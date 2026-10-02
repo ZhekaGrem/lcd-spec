@@ -12,12 +12,18 @@ prompt: |
   Plan: openspec/changes/[CHANGE]/plan.md
   Tracker: openspec/changes/[CHANGE]/tasks.md
   Spec: proposal.md, specs/, design.md, grilling.md in the same directory.
+  Past mistakes of this project: openspec/incidents.md, "Lessons index".
   Repository: [REPO_DIR] (read-only).
 
   Flag only what would make an implementer build the wrong thing or get stuck:
   - spec requirements or scenarios with no task that implements and tests them;
   - grilling decisions the plan ignores or contradicts;
+  - a lesson the plan's "Lessons applied" assigns to a task that has no step or test for
+    it, or waves off as not applicable when the change does touch what the lesson is about;
   - placeholders, steps without real code or commands, "similar to Task N";
+  - a Verification or Verify command that cannot prove anything when a script runs it
+    unattended: it never exits (watch mode, a dev server), it waits for input, it exits 0
+    on failure, or it does not run the tests the task adds;
   - names, signatures or files used in one task and defined in none, or defined differently;
   - tasks whose Interfaces disagree with their neighbours;
   - file paths that do not match the repository's structure.

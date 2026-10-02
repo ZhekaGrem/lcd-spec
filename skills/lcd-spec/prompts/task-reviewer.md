@@ -23,7 +23,8 @@ prompt: |
 
   ## The diff
   Base [BASE_SHA], head [HEAD_SHA]. Package: [DIFF_FILE]
-  Read the package once. It holds the commits, the stat and the full diff with context. Do not
+  Read the package once. It holds the commits, the stat, the independent test run and the
+  full diff with context. Do not
   re-run git and do not crawl the codebase. Look outside the diff only to check a concrete
   risk you can name (a changed contract → its call sites), and name both the risk and the
   check. Your review is read-only: never change the working tree, index, HEAD or branches.
@@ -32,16 +33,26 @@ prompt: |
   Do the whole review yourself, in several passes if it is large.
 
   ## Tests
-  The implementer ran the tests and reported TDD evidence. Do not re-run the suite. Run one
-  focused test only when the code raises a specific doubt no existing run answers. Noise or
-  warnings in the reported output are findings. If the evidence is missing or truncated,
-  report that as a gap. Do not regenerate it.
+  The package's "Independent run" section is what a script got when it ran this task's
+  commands after the implementer finished: the commands, their exit codes and raw output,
+  and whether the code changed since. Judge the tests by that run, never by the report.
+  - `Status: FAIL` (a command failed, the run is missing, or it is older than the code):
+    spec compliance is ❌ whatever the report says. Quote the status lines.
+  - The report claims something the run does not show (a count, "all passing", a test
+    that never appears in the output): Important. Say where the two differ.
+  - Noise or warnings in the run's output are findings.
+  The RED evidence (the test failing before the code existed) lives only in the report. If
+  it is missing or truncated, report that as a gap. Do not regenerate it.
+  Do not re-run the suite. Run one focused test only when the code raises a specific doubt
+  the recorded run does not answer.
 
   ## Part 1: spec compliance
   - Missing: requirements skipped or claimed without implementation.
   - Extra: features not requested, over-engineering.
   - Misunderstood: the right feature built the wrong way.
   For a batched brief, check that every listed file has its hunk.
+  The brief's "Known pitfalls" are incidents this project already paid for. A diff that
+  repeats one is Important at least, and you name the INC id.
   Requirements that live in unchanged code or span tasks go under ⚠️. Do not widen your
   search for them.
 

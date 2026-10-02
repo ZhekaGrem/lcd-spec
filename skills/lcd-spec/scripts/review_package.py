@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
-"""Write one file a reviewer reads instead of running git itself.
+"""Write one file a reviewer reads instead of running git or the tests itself.
 
-The package holds the commit list, a stat summary and the full diff with 10 lines of
-context for BASE..HEAD, so the diff never enters the controller's context.
+The package holds the commit list, a stat summary, the independent run that verify_run.py
+recorded and the full diff with 10 lines of context for BASE..HEAD, so the diff never
+enters the controller's context. A run that is missing, failed or older than the code is
+marked 'Status: FAIL' with the reason: the reviewer sees it instead of a report's claim.
 
 Usage: python review_package.py <change-dir> <base> <head> [label]
 Writes <change-dir>/.work/review-<label>.md (label defaults to <base7>-<head7>) and
-prints its path.
+prints its path. A 'task-…' label takes the run with the same label; any other label takes
+the whole-change run (verification.md).
 """
 from __future__ import annotations
 
 import subprocess
 import sys
 from pathlib import Path
+
+import verify_run
 
 
 def git(repo: Path, *args: str) -> str:
@@ -24,11 +29,13 @@ def write_package(change: Path, base: str, head: str, label: str | None = None) 
     change = Path(change).resolve()
     repo = Path(git(change, "rev-parse", "--show-toplevel").strip())
     rng = f"{base}..{head}"
+    run = verify_run.review_section(change, label)
     label = label or f"{base[:7]}-{head[:7]}"
     text = "\n".join([
         f"# Review package {rng}", "",
         "## Commits", "```", git(repo, "log", "--oneline", rng).rstrip(), "```", "",
         "## Stat", "```", git(repo, "diff", "--stat", rng).rstrip(), "```", "",
+        *run,
         "## Diff", "```diff", git(repo, "diff", "-U10", rng).rstrip(), "```", "",
     ])
     work = change / ".work"

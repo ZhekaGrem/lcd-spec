@@ -61,6 +61,68 @@ class TaskBrief(unittest.TestCase):
             task_brief.write_brief(self.change, "9.9")
 
 
+class TaskBriefLessons(unittest.TestCase):
+    """The implementer never reads incidents.md, so the brief carries its lessons."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.openspec = Path(self._tmp.name) / "openspec"
+        self.change = self.openspec / "changes" / "add-export"
+        self.change.mkdir(parents=True)
+        (self.change / "plan.md").write_text(PLAN, encoding="utf-8")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def brief(self, task_id="1.1"):
+        return task_brief.write_brief(self.change, task_id).read_text(encoding="utf-8")
+
+    def test_brief_carries_the_active_lessons(self):
+        (self.openspec / "incidents.md").write_text(
+            "## Lessons index\n\n- INC-20260924-1 - Name the cache invalidator in the spec\n\n"
+            "## Retired lessons\n\n- INC-20260801-1 - Pin the Node version\n", encoding="utf-8")
+        text = self.brief()
+        self.assertIn("INC-20260924-1", text)
+        self.assertIn("Name the cache invalidator in the spec", text)
+        self.assertNotIn("INC-20260801-1", text)
+        self.assertIn("test for exporter", text)
+
+    def test_brief_without_a_log_mentions_no_incidents(self):
+        self.assertNotIn("INC-", self.brief())
+
+    def test_brief_with_an_empty_index_mentions_no_incidents(self):
+        (self.openspec / "incidents.md").write_text("## Lessons index\n\n## Entries\n", encoding="utf-8")
+        self.assertNotIn("incidents", self.brief().lower())
+
+    def narrowed(self, extra):
+        (self.change / "plan.md").write_text(
+            "# Plan\n\n## Global Constraints\n- UTF-8\n\n"
+            "### Task 1.1: Exporter\n\n**Files:**\n- Create: `src/export/exporter.py`\n"
+            "- Modify: `src/api.py:10-42`\n\n**Interfaces:**\n- Produces: `export()` in `ignored.sql`\n\n"
+            "Step 1: test for exporter\n\n"
+            "### Task 1.2: Migration\n\n**Files:**\n- Create: `db/V13__export.sql`\n\nStep 1: migrate\n",
+            encoding="utf-8")
+        (self.openspec / "incidents.md").write_text(
+            "## Lessons index\n\n- INC-20260915-1 - Re-check the migration number\n\n## Entries\n\n"
+            "### INC-20260915-1: collision\n- **Change:** other\n" + extra, encoding="utf-8")
+
+    def test_lesson_about_other_files_stays_out_of_the_brief(self):
+        self.narrowed("- **Paths:** **/*.sql\n")
+        self.assertNotIn("INC-20260915-1", self.brief("1.1"))
+
+    def test_lesson_about_a_file_of_this_task_is_in_the_brief(self):
+        self.narrowed("- **Paths:** **/*.sql\n")
+        self.assertIn("INC-20260915-1", self.brief("1.2"))
+
+    def test_line_range_after_a_path_does_not_hide_the_file(self):
+        self.narrowed("- **Paths:** src/api.py\n")
+        self.assertIn("INC-20260915-1", self.brief("1.1"))
+
+    def test_lesson_needed_only_at_grilling_stays_out_of_the_brief(self):
+        self.narrowed("- **Needed at:** grill\n")
+        self.assertNotIn("INC-20260915-1", self.brief("1.1"))
+
+
 class Install(unittest.TestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()

@@ -12,7 +12,8 @@ prompt: |
   ## Your requirements
   Read this first: [BRIEF_FILE]
   It holds the task's full text and the plan's Global Constraints, with exact values to use
-  verbatim. Do not read the whole plan.
+  verbatim. Do not read the whole plan. If it has a "Known pitfalls" section, those are
+  mistakes this project already made once: treat each line as a requirement.
 
   ## Context
   [One line on where this task fits. Interfaces and rulings from earlier tasks the brief
@@ -28,8 +29,8 @@ prompt: |
   1. Implement exactly what the task specifies: nothing missing, nothing extra.
   2. Follow TDD as the steps say: write the failing test, run it and see it fail for the
      expected reason, write the minimal code, run it and see it pass.
-  3. While iterating, run the focused test. Run the full relevant suite once before
-     committing.
+  3. While iterating, run the focused test. Run the full relevant suite, and the brief's
+     "Verify" commands if it has them, once before committing.
   4. Commit with a Conventional Commits message.
   5. Self-review (below), then report.
 
@@ -54,6 +55,8 @@ prompt: |
   ## Self-review before reporting
   - Completeness: every requirement in the brief is implemented, edge cases handled.
   - Discipline: nothing beyond the brief (YAGNI), existing patterns followed.
+  - Pitfalls: for each "Known pitfalls" line in the brief, either it does not touch your
+    task or your code avoids it. Say which in the report.
   - Tests: they verify behaviour, not mocks. The expected values are written by hand, not
     computed by the code under test. The output is clean, with no stray warnings.
   Fix what you find now.
@@ -69,6 +72,10 @@ prompt: |
   - TDD evidence: RED (command, failing output, why the failure was expected) and GREEN
     (command, passing output);
   - files changed; self-review findings; concerns.
+  After your report a script re-runs the task's commands on what you left in the working
+  tree, and the reviewer reads that output, not your summary. Report what you saw,
+  failures included: a red test you name is a finding to fix, a green claim the re-run
+  contradicts sends the task back and is recorded as an incident.
 
   Then reply with ONLY (under 15 lines):
   - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT

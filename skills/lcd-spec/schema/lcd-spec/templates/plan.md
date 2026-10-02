@@ -19,12 +19,23 @@
 
 ## Verification
 
-<!-- The commands that prove the whole change: test / typecheck / lint / build. -->
+<!-- The commands that prove the whole change: test / typecheck / lint / build. One list
+     item per command, the command in backticks, a note after it if needed:
+     - `pnpm test --run` - unit tests
+     verify_run.py runs exactly these from the project root and records their output and
+     exit codes. Each must end on its own (no watch mode, no dev server) and exit non-zero
+     when it fails. -->
 
 ## Review Focus
 
 <!-- Up to five inputs or failure modes the spec implies but no test exercises yet, most
      likely first; each one gets its test added to the task that owns the code. -->
+
+## Lessons applied
+
+<!-- One line per active lesson in openspec/incidents.md "Lessons index":
+     INC-id - Task N.M does <what>     or     INC-id - not applicable - <why>
+     The plan gate fails while an active lesson has no line here. No active lessons: "none". -->
 
 ## File Structure
 
@@ -42,6 +53,9 @@
 **Interfaces:**
 - Consumes: <!-- exact signatures from earlier tasks -->
 - Produces: <!-- exact names and types later tasks rely on -->
+
+**Verify:**
+- `<!-- the command that proves this task once it is done, e.g. its test file run to the end -->`
 
 **Step 1: Write the failing test**
 

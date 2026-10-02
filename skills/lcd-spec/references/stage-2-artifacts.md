@@ -25,6 +25,12 @@ Points that matter more than the template suggests:
   lost. Grilling will attack exactly these.
 - **Scope boundary with another open change**: edit that change's proposal in the same
   session, so both documents say the same thing.
+- **What the user did not say**: anything you filled in on your own gets
+  `ASSUMED (unconfirmed): <what you assumed>` right where it is used, and a gap you could
+  not fill gets `[NEEDS CLARIFICATION: <question>]`. Open design questions go under design.md
+  `## Open Questions` as `- [ ]` items. A silent guess reads like a decision and nobody
+  questions it later; a marker becomes a stage 3 question. `gate.py check … grilling` fails
+  while any marker or unchecked question remains.
 
 ## Self-review before showing the user
 

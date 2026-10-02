@@ -21,7 +21,7 @@ with the user, whose claims were checked against the code, and whose plan an
 implementer subagent can execute without guessing.
 
 ```
-0 context → 1 brainstorm → 2 artifacts → 3 grill ⛔ → 4 plan ⛔ → 5 audit ⛔ → 5b perspectives ⛔ → 6 apply → 7 archive
+0 context → 1 brainstorm → 2 artifacts → 3 grill ⛔ → 4 plan ⛔ → 5 audit ⛔ → 5b perspectives ⛔ → 6 apply ⛔ → 7 archive
 ```
 
 Stage 5b is optional for the user, but the question is not: the gate needs review.md
@@ -43,6 +43,9 @@ Every stage exists because skipping it once cost real rework:
   four of them inside a section titled "verified by reading code".
 - **Perspectives** — the audit proves the plan matches the code, not that it is right for
   the person testing, using, building or maintaining it. Each role sees different failures.
+- **Independent run** — "tests pass" in an implementer's report is a claim, and such claims
+  are wrong often enough: edited after the last run, or summed up from several runs. A
+  script runs the commands, and reviewers and the archive gate read what it recorded.
 
 So the gates are not a formality to route around. When a gate fails, fix the named stage;
 do not argue the gate down, edit the verdict line by hand, or re-stamp without re-checking.
@@ -52,9 +55,14 @@ Three layers enforce them:
 1. **OpenSpec schema `lcd-spec`** — `openspec instructions apply` returns `blocked` while
    grilling.md, plan.md, tasks.md, audit.md or review.md is missing.
 2. **`gate.py`** — the schema only sees that a file exists. `gate.py check <change-dir> <stage>`
-   checks the verdict, open questions, open blockers, open must-fix findings, plan/tasks
-   numbering, placeholders, and
-   whether the artifacts changed after the stage was stamped. **gate.py is the authority**:
+   checks the verdict, recorded decisions, open questions, unresolved
+   `ASSUMED (unconfirmed)` / `[NEEDS CLARIFICATION` markers, open blockers, an incident
+   entry behind every resolved blocker, open must-fix findings, the plan's required
+   sections and per-task Files / Interfaces, an answer in the plan to every active lesson,
+   plan/tasks numbering, placeholders, whether the artifacts changed after the stage
+   was stamped, and, before archive, that `verify_run.py` recorded a green run of the
+   plan's Verification commands against the code as it is now.
+   A required section that is missing fails the gate. **gate.py is the authority**:
    OpenSpec says `ready` as soon as audit.md exists, even with `Verdict: PENDING`.
 3. **The user** — design, written artifacts, grilling and plan each need the user's explicit
    yes. An approval covers the stage that was shown, not the ones after it.
@@ -72,8 +80,8 @@ Read the reference for a stage when you enter it — not all of them upfront.
 | 4 | Plan | plan.md, tasks.md | `gate.py check … plan` + user reviews | `references/stage-4-plan.md` |
 | 5 | Pre-apply audit | audit.md, design.md "Audit findings" | `gate.py check … audit` | `references/stage-5-audit.md` |
 | 5b | Perspective review | review.md (SKIPPED or PASS) | `gate.py check … apply` | `references/stage-5b-perspectives.md` |
-| 6 | Apply | code, ledger.md, ticked tasks.md | all tasks reviewed clean + final review | `references/stage-6-apply.md` |
-| 7 | Archive | `openspec/changes/archive/<date>-<name>/` | user confirms | `references/stage-7-archive.md` |
+| 6 | Apply | code, ledger.md, ticked tasks.md, verification.md | all tasks reviewed clean + final review + `gate.py check … archive` | `references/stage-6-apply.md` |
+| 7 | Archive | `openspec/changes/archive/<date>-<name>/`, refreshed roadmap.md | `gate.py check … archive` + user confirms | `references/stage-7-archive.md` |
 | — | Incident audit | incidents.md entry | — | `references/incident-audit.md` |
 
 ## Start of every invocation
@@ -89,7 +97,9 @@ Read the reference for a stage when you enter it — not all of them upfront.
    - read `ledger.md` if it exists (stage 6 in progress)
 
    Resume at the **earliest** stage that is not PASS. A stale stage counts as not PASS.
-3. **Announce** in one line which change and stage you are on, e.g.
+3. **Lessons.** Read the Lessons index of `openspec/incidents.md` again, also on a resume:
+   entries added since the change started apply to it too.
+4. **Announce** in one line which change and stage you are on, e.g.
    "lcd-spec: `add-export`, stage 4 (plan). Grilling PASS, plan missing."
 
 ## Where things live
@@ -102,6 +112,7 @@ Finished work never mixes with work in progress.
 openspec/
   specs/                      living specs (updated by archive)
   incidents.md                project mistakes and lessons - read at every stage 0
+  roadmap.md                  index of what was done, is open and is planned - searched on demand, never read through
   schemas/lcd-spec/           installed by install.py
   changes/<name>/
     proposal.md  specs/  design.md     stage 2
@@ -110,7 +121,8 @@ openspec/
     audit.md                           stage 5 (stamped)
     review.md                          stage 5b (SKIPPED or PASS)
     ledger.md                          stage 6 progress and rulings - survives compaction
-    .work/                             scratch: briefs, reports, review packages (gitignored)
+    verification.md                    stage 6 final run of the Verification commands (verify_run.py)
+    .work/                             scratch: briefs, reports, task runs, review packages (gitignored)
   changes/archive/<date>-<name>/       the same directory after stage 7
 ```
 
@@ -130,26 +142,37 @@ the current text.
 - **Audit stale** (anything up to plan/tasks changed): re-run the audit checks that the
   change touches, record the result, re-stamp. Ticking tasks and the "Audit findings"
   section in design.md never make anything stale.
+- **Verification stale** (a project file changed after `verify_run.py` ran): run it
+  again. Files under `openspec/` and files git ignores do not count.
 
 ## Incidents and frustration signals
 
 `openspec/incidents.md` is the project's memory of what went wrong. Stage 0 reads its
-lessons; stages 3 and 5 check the change against them.
+lessons; stages 3 and 5 check the change against them; the plan gate (stage 4) fails until
+plan.md answers every active lesson under `## Lessons applied`; and `task_brief.py` copies
+them into every implementer brief in stage 6.
 
-Add an entry (format in the file) when:
+Record an incident when:
 
 - a pre-apply audit finds a **Blocker**: the plan diverged from reality, and the lesson
-  prevents the next one;
+  prevents the next one. The audit gate fails on a resolved blocker that cites no entry;
 - a task in stage 6 needs **3+ fix rounds** or hits the breaker;
 - the final review finds a **Critical** issue;
 - an incident audit (below) finishes;
 - the user reports a bug in work from an archived change.
 
+Recording is always the same three steps, spelled out in `references/incident-audit.md`
+"Recording the incident": `incidents.py find` to see whether this already happened, then
+`incidents.py bump` on the entry it repeats **or** a new entry (format in the file), then
+`incidents.py validate`. A repeat is never written as a second entry: the count on the
+first one is what shows that a lesson is not working and has to become a check that runs.
+
 **Frustration signals.** The plugin's `UserPromptSubmit` hook (`scripts/frustration.py`)
 scores each user message for swearing (Ukrainian, Russian, English), blame
 ("ти знову все зламав", "я ж просив"), repeated-failure complaints ("досі не працює") and
-milder negativity. When the per-session streak crosses a level, it injects a
-`<lcd-spec-signal level="N">` block. When you see one, follow `references/incident-audit.md`
+milder negativity. Subagent reports and background-task notices arrive through the same
+hook and are skipped: only the user's own words count. When the per-session streak crosses
+a level, it injects a `<lcd-spec-signal level="N">` block. When you see one, follow `references/incident-audit.md`
 at that level **before** continuing the task. Level 3 is a full stop until the user
 explicitly says to continue. Without the hook, run the same protocol when the user is
 clearly frustrated with your work or asks for an audit.
@@ -177,15 +200,24 @@ clearly frustrated with your work or asks for an audit.
 | "I'll implement this small task myself instead of dispatching" | Controller-written code skips review. Dispatch it. |
 | "Put the plan in docs/ like before" | Everything lives in the change directory, or it is not archived with it. |
 | "The user swore but the task is almost done" | The signal means your picture may be wrong. Audit first, then finish. |
+| "The implementer reported all tests passing" | A report is a claim. `verify_run.py` is the run, and the reviewer reads the run. |
+| "I ran the tests myself, I'll paste the output" | A pasted result has no exit code and no link to the code it ran on. Run `verify_run.py`. |
+| "This looks like the incident from last week, I'll add an entry" | `incidents.py find` first. A repeat is bumped, not written twice. |
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/install.py <project>` | install schema, switch config, create incidents.md, gitignore `.work/` |
-| `scripts/gate.py check <change> <grilling\|plan\|audit\|review\|apply>` | hard gate, exit 1 on FAIL with reasons |
+| `scripts/install.py <project>` | install schema, switch config, create incidents.md, gitignore `.work/`, write roadmap.md |
+| `scripts/roadmap.py <project>` | rewrite `openspec/roadmap.md` from open and archived changes and `feat` / `fix` commits; keeps the hand-written "Planned" |
+| `scripts/gate.py check <change> <grilling\|plan\|audit\|review\|apply\|archive>` | hard gate, exit 1 on FAIL with reasons |
 | `scripts/gate.py stamp <change> <grilling\|audit>` | record the artifacts hash after the stage is done |
 | `scripts/gate.py status <change>` | all gates at a glance |
-| `scripts/task_brief.py <change> <N.M>` | one task + Global Constraints → `.work/task-N.M-brief.md` |
-| `scripts/review_package.py <change> <base> <head> [label]` | commits + stat + diff → `.work/review-*.md` |
+| `scripts/task_brief.py <change> <N.M>` | one task + Global Constraints + active lessons → `.work/task-N.M-brief.md` |
+| `scripts/verify_run.py <change> [N.M] [--label L]` | run the task's Verify commands (or the plan's Verification) → `.work/verify-<label>.md` or `verification.md`; exit 1 when one fails |
+| `scripts/review_package.py <change> <base> <head> [label]` | commits + stat + the independent run + diff → `.work/review-*.md` |
+| `scripts/incidents.py find <log> "<what happened>" [--class C]` | entries a new incident may repeat, closest first |
+| `scripts/incidents.py bump <log> <INC-id>` | count a repeat on the existing entry (`Recurrence`, `Seen`) |
+| `scripts/incidents.py validate <log>` | format check of incidents.md, exit 1 with the errors |
+| `scripts/incidents.py select <log> [--stage S] [--files PATH …]` | active lessons that apply to a stage and files |
 | `scripts/frustration.py` | the hook; `--classify "text"` to test a message, `--dismiss <session> <event>` to retract |

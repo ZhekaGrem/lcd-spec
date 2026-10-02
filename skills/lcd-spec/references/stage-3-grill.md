@@ -14,7 +14,9 @@ understanding of it.
 1. **Build the decision tree first** (silently). List every decision in proposal, specs
    and design, plus the ones they skip: error states, empty states, concurrency, limits,
    ordering, permissions, migration and rollback, what happens to existing data, what
-   "immediately" means. Order them by dependency: a decision that changes others goes first.
+   "immediately" means. Every `ASSUMED (unconfirmed)` and `[NEEDS CLARIFICATION` marker in the
+   artifacts and every unchecked item under design.md `## Open Questions` is on the tree.
+   Order them by dependency: a decision that changes others goes first.
 2. **One question per message.** State the decision, the options, and your recommended
    answer with its reason. Wait for the user. Several questions at once get half-answers.
 3. **Facts are looked up, decisions are asked.** If the answer is in the code, the living
@@ -38,15 +40,18 @@ understanding of it.
 Fill `grilling.md` **as you go**, not from memory at the end:
 
 - `## Decisions`: one block per resolved question (question, options, recommended,
-  decided, the user's reason, dependencies);
+  decided, the user's reason, dependencies). The gate fails on an empty section; a change
+  with nothing to decide says `none - <why>`;
 - `## Facts looked up`: fact plus evidence (`path:line`, command output);
 - `## Lessons from incidents.md applied`: which lessons shaped which decision;
 - `## Open questions`: `- [ ]` for anything unresolved. The gate blocks while any stays
-  unchecked. `- [x] question -> answer` once resolved.
+  unchecked. `- [x] question -> answer` once resolved. Keep the heading even when the list
+  is empty: the gate fails without it.
 
 Decisions that change the artifacts are applied to proposal / specs / design **now**, before
 the stamp. The stamp covers those files, and grilling is only meaningful against the text
-it grilled.
+it grilled. An answered marker is replaced by the answer, and an answered design.md open
+question is ticked with its answer.
 
 ## Closing
 

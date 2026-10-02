@@ -123,7 +123,8 @@ bump, and a task must test that the version grew.
   the earlier decisions.
 - Plan vs. specs: every scenario has a task that tests it. Plan vs. design: no task
   contradicts a decision.
-- incidents.md lessons: every relevant lesson is honoured.
+- incidents.md lessons: every relevant lesson is honoured. List them with
+  `python <skill>/scripts/incidents.py select openspec/incidents.md --stage audit`.
 
 ## Findings
 
@@ -153,9 +154,14 @@ reference is unfalsifiable and rots exactly like the one you just found.
    as a named deviation**, or **dropped, because …**. When this section already exists, read it
    **first** and hold every earlier finding against the current text. A finding that a
    rewrite quietly lost is reported again, with its original date.
-5. Add an incidents.md entry for each Blocker (class `rot` or `stillborn` usually), with
-   a Lesson future changes can act on.
-6. Tick each resolved blocker `- [x]` in audit.md.
+5. Record each Blocker in `openspec/incidents.md` the way `references/incident-audit.md`
+   "Recording the incident" says: `incidents.py find` first, then `bump` the entry it
+   repeats or add a new one (`Signal: audit blocker`, class `rot` or `stillborn` usually,
+   a Lesson future changes can act on), then `incidents.py validate`. Blockers with one
+   cause share one entry.
+6. Tick each resolved blocker `- [x]` in audit.md and put its incident id on the same line:
+   `- [x] V12 is taken - evidence: … - fix: task 0.1 added (INC-20261002-1)`. The gate fails
+   on a ticked blocker without an id, or with an id that has no entry in the log.
 7. If a fix changed a **decision**, grilling is now stale for a real reason. Grill that
    point, update grilling.md, re-stamp it. If fixes only corrected facts, re-stamp grilling
    with a line under `## Re-stamps`.

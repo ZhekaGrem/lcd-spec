@@ -4,17 +4,30 @@
 OpenSpec's own schema only knows whether an artifact file exists. This script checks
 what the file says and whether it is still true:
 
-  grilling  grilling.md has "Verdict: PASS", no unanswered open question, and was
-            stamped against the current proposal / specs / design
-  plan      grilling passes; plan.md has Global Constraints, no placeholders, and
-            exactly the same task numbers as tasks.md
-  audit     plan passes; audit.md has "Verdict: PASS", no open blocker, a
-            "What I did NOT verify" section, and was stamped against the current
+  grilling  grilling.md has "Verdict: PASS", a non-empty "Decisions" section, an
+            "Open questions" section with nothing unanswered, and was stamped against
+            the current proposal / specs / design; those artifacts carry no
+            "[NEEDS CLARIFICATION" / "ASSUMED (unconfirmed)" marker and design.md has
+            no unchecked open question
+  plan      grilling passes; plan.md has Global Constraints, a non-empty Verification
+            and File Structure, no placeholders, a Files and an Interfaces block in
+            every task, exactly the same task numbers as tasks.md, and a "Lessons
+            applied" line for every active lesson in openspec/incidents.md that
+            applies to the plan's files at the plan or apply stage
+  audit     plan passes; audit.md has "Verdict: PASS", a "Blockers" section with
+            nothing open and an existing INC id on every resolved blocker, a "What I
+            did NOT verify" section, and was stamped against the current
             proposal / specs / design / grilling / plan / tasks
   review    audit passes; review.md exists with "Verdict: SKIPPED" (the user declined the
-            perspective review) or "Verdict: PASS" with a "Perspectives:" line and no
-            open item under "Must fix"
+            perspective review) or "Verdict: PASS" with a "Perspectives:" line and a
+            "Must fix" section with nothing open
   apply     review passes
+  archive   apply passes; verification.md (written by `verify_run.py <change>`) shows
+            every Verification command exiting 0, and the project's files have not
+            changed since that run
+
+A required section that is absent fails the gate: a file that dropped the section would
+otherwise pass exactly the check the section exists for.
 
 "Stamped" means `gate.py stamp` wrote an Artifacts-Hash line after the stage finished.
 Editing any covered artifact afterwards makes the stage stale until it is re-checked
@@ -22,7 +35,8 @@ and re-stamped. Ticking checkboxes in tasks.md and appending an "Audit findings"
 section to design.md do not count as edits.
 
 Usage:
-  python gate.py check  <change-dir> <grilling|plan|audit|review|apply>   exit 0 = PASS, 1 = FAIL
+  python gate.py check  <change-dir> <grilling|plan|audit|review|apply|archive>
+                                                             exit 0 = PASS, 1 = FAIL
   python gate.py stamp  <change-dir> <grilling|audit>
   python gate.py status <change-dir>
 """
@@ -34,20 +48,27 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import incidents
+import verify_run
+
 HASH_LINE_RE = re.compile(r"^Artifacts-Hash:.*$", re.M)
 VERDICT_RE = re.compile(r"^Verdict:\s*(\S+)", re.M)
 TASK_ID_RE = re.compile(r"^\s*- \[[ xX]\] (\d+(?:\.\d+)*)\b", re.M)
 PLAN_TASK_RE = re.compile(r"^#{2,4}\s+Task\s+(\d+(?:\.\d+)*)\b")
 CHECKBOX_RE = re.compile(r"^(\s*- )\[[xX]\]", re.M)
 UNCHECKED_RE = re.compile(r"^\s*- \[ \]", re.M)
+CHECKED_RE = re.compile(r"^\s*- \[[xX]\]\s*(.*)$", re.M)
+INCIDENT_ID_RE = re.compile(r"INC-\d{8}-\d+")
 PLACEHOLDER_RE = re.compile(
     r"\bTBD\b|\bTODO\b|implement later|fill in details|add appropriate error handling"
     r"|handle edge cases|similar to task\s+\d|<!--", re.I)
 COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+UNCONFIRMED_RE = re.compile(r"\[NEEDS CLARIFICATION|ASSUMED \(unconfirmed\)", re.I)
+TASK_BLOCKS = ("Files", "Interfaces")
 
 PERSPECTIVES_RE = re.compile(r"^Perspectives:\s*\S", re.M)
 
-STAGES = ("grilling", "plan", "audit", "review", "apply")
+STAGES = ("grilling", "plan", "audit", "review", "apply", "archive")
 
 
 @dataclass
@@ -85,6 +106,39 @@ def strip_section(text: str, title: str) -> str:
         return text
     m = re.search(rf"^##\s+{re.escape(title)}[^\n]*\n", text, re.M | re.I)
     return text[: m.start()] + text[m.end() + len(body):]
+
+
+def _has_content(body: str | None) -> bool:
+    """True when a section holds something besides template comments and rules."""
+    if body is None:
+        return False
+    return any(line.strip() and line.strip() != "---"
+               for line in COMMENT_RE.sub("", body).splitlines())
+
+
+def _open_items(text: str, title: str) -> int | None:
+    """Unchecked boxes under '## <title>', or None when the section is absent."""
+    body = section(COMMENT_RE.sub("", text), title)
+    return None if body is None else len(UNCHECKED_RE.findall(body))
+
+
+def _plan_tasks(plan: str) -> tuple:
+    """(text before the first task, [(task id, its lines outside code fences)])."""
+    preamble, tasks, in_fence = [], [], False
+    for line in plan.splitlines():
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = PLAN_TASK_RE.match(line)
+        if m:
+            tasks.append((m.group(1), []))
+        elif tasks:
+            tasks[-1][1].append(line)
+        else:
+            preamble.append(line)
+    return "\n".join(preamble), tasks
 
 
 def _covered_files(change: Path, artifact: str) -> list:
@@ -161,10 +215,28 @@ def _check_grilling(change: Path, reasons: list) -> None:
         reasons.append("grilling.md missing - run stage 3 (grill) first")
         return
     _verdict_and_stamp(change, "grilling", text, reasons)
-    open_q = section(COMMENT_RE.sub("", text), "Open questions")
-    if open_q is not None and UNCHECKED_RE.search(open_q):
-        n = len(UNCHECKED_RE.findall(open_q))
-        reasons.append(f"grilling.md: {n} open question(s) still unanswered")
+    if not _has_content(section(text, "Decisions")):
+        reasons.append("grilling.md: '## Decisions' is missing or empty - record each decision "
+                       "the user made, or 'none - <why>' when the change has none")
+    open_q = _open_items(text, "Open questions")
+    if open_q is None:
+        reasons.append("grilling.md: no '## Open questions' section - keep it, empty when "
+                       "nothing is open")
+    elif open_q:
+        reasons.append(f"grilling.md: {open_q} open question(s) still unanswered")
+    _check_unconfirmed(change, reasons)
+
+
+def _check_unconfirmed(change: Path, reasons: list) -> None:
+    """Gaps the artifacts themselves still flag: grilling settles them, it does not pass over them."""
+    for name, text in _covered_files(change, "grilling"):
+        marks = sorted({m.group(0) for m in UNCONFIRMED_RE.finditer(COMMENT_RE.sub("", text))})
+        if marks:
+            reasons.append(f"{name}: unresolved marker {marks} - ask the user, write the answer "
+                           "in, remove the marker")
+        if name == "design.md" and _open_items(text, "Open Questions"):
+            reasons.append(f"design.md: {_open_items(text, 'Open Questions')} open question(s) "
+                           "still unanswered")
 
 
 def _check_plan(change: Path, reasons: list) -> None:
@@ -182,14 +254,34 @@ def _check_plan(change: Path, reasons: list) -> None:
     if hits:
         reasons.append(f"plan.md: placeholder text {hits} - write the real content")
 
-    plan_ids, in_fence = [], False
-    for line in plan.splitlines():
-        if line.lstrip().startswith("```"):
-            in_fence = not in_fence
-        elif not in_fence:
-            m = PLAN_TASK_RE.match(line)
-            if m:
-                plan_ids.append(m.group(1))
+    preamble, plan_tasks = _plan_tasks(plan)
+    for title, what in (("Verification", "the commands that prove the whole change"),
+                        ("File Structure", "each file touched and its one responsibility")):
+        if not _has_content(section(preamble, title)):
+            reasons.append(f"plan.md: '## {title}' is missing or empty - list {what}")
+    if _has_content(section(preamble, "Verification")) and not verify_run.commands(plan)[0]:
+        reasons.append("plan.md: '## Verification' names no command verify_run.py can run - "
+                       "one list item per command, the command in backticks")
+    for task_id, lines in plan_tasks:
+        body = "\n".join(lines)
+        missing = [b for b in TASK_BLOCKS
+                   if not re.search(rf"^\s*\*{{0,2}}{b}:", body, re.M | re.I)]
+        if missing:
+            reasons.append(f"plan.md: Task {task_id} has no {' / '.join(missing)} block - "
+                           "the implementer sees only its own task")
+    answered = section(preamble, "Lessons applied") or ""
+    files = incidents.files_named("\n".join(line for _, lines in plan_tasks for line in lines))
+    # an incident this change records itself (audit blocker, fix loop) postdates its plan
+    lessons = incidents.lessons_for(change, stages=("plan", "apply"), files=files,
+                                    exclude_change=change.resolve().name)
+    unanswered = [lesson_id for lesson_id, _ in lessons
+                  if not re.search(rf"{re.escape(lesson_id)}(?!\d)", answered)]
+    if unanswered:
+        reasons.append(f"plan.md: '## Lessons applied' does not answer {unanswered} from "
+                       "openspec/incidents.md - name the task that handles each lesson, or "
+                       "'not applicable - <why>'")
+
+    plan_ids = [task_id for task_id, _ in plan_tasks]
     task_ids = TASK_ID_RE.findall(tasks)
     if not task_ids:
         reasons.append("tasks.md: no '- [ ] N.M' tasks found")
@@ -207,9 +299,21 @@ def _check_audit(change: Path, reasons: list) -> None:
         reasons.append("audit.md missing - run stage 5 (pre-apply audit)")
         return
     _verdict_and_stamp(change, "audit", text, reasons)
-    blockers = section(COMMENT_RE.sub("", text), "Blockers")
-    if blockers is not None and UNCHECKED_RE.search(blockers):
-        reasons.append(f"audit.md: {len(UNCHECKED_RE.findall(blockers))} open blocker(s)")
+    blockers = _open_items(text, "Blockers")
+    if blockers is None:
+        reasons.append("audit.md: no '## Blockers' section - keep it, empty when none were found")
+    elif blockers:
+        reasons.append(f"audit.md: {blockers} open blocker(s)")
+    known = incidents.entry_ids(change)
+    for line in CHECKED_RE.findall(section(COMMENT_RE.sub("", text), "Blockers") or ""):
+        cited = INCIDENT_ID_RE.findall(line)
+        if not cited:
+            reasons.append(f"audit.md: resolved blocker without an incident entry: '{line[:60]}' - "
+                           "record it in openspec/incidents.md and cite the INC id on this line")
+        for incident_id in cited:
+            if incident_id not in known:
+                reasons.append(f"audit.md: blocker cites {incident_id}, which has no entry in "
+                               "openspec/incidents.md")
     if section(text, "What I did NOT verify") is None:
         reasons.append("audit.md: no '## What I did NOT verify' section")
 
@@ -229,9 +333,11 @@ def _check_review(change: Path, reasons: list) -> None:
                        "needs 'Verdict: PASS' (or SKIPPED if the user declined)")
     if not PERSPECTIVES_RE.search(text):
         reasons.append("review.md: no 'Perspectives:' line naming the roles the user chose")
-    must_fix = section(COMMENT_RE.sub("", text), "Must fix")
-    if must_fix is not None and UNCHECKED_RE.search(must_fix):
-        reasons.append(f"review.md: {len(UNCHECKED_RE.findall(must_fix))} open must-fix finding(s)")
+    must_fix = _open_items(text, "Must fix")
+    if must_fix is None:
+        reasons.append("review.md: no '## Must fix' section - keep it, empty when none were found")
+    elif must_fix:
+        reasons.append(f"review.md: {must_fix} open must-fix finding(s)")
 
 
 def check(change: Path, stage: str) -> Result:
@@ -247,11 +353,14 @@ def check(change: Path, stage: str) -> Result:
         _check_audit(change, result.reasons)
     if order >= 3:
         _check_review(change, result.reasons)
+    if order >= 5:
+        result.reasons.extend(verify_run.problems(change))
     return result
 
 
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    incidents.utf8_output()
     if len(argv) >= 2 and argv[0] == "status":
         change = Path(argv[1])
         worst = 0

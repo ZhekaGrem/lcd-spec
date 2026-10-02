@@ -21,8 +21,12 @@ prompt: |
   Scope: the findings and the fix diff. An issue entirely outside the fix diff goes under
   out-of-scope observations. It does not block and does not extend the loop.
 
-  Tests: confirm the fix report names the covering tests and shows their output. Do not
-  re-run the suite. Run one focused test only for a specific doubt.
+  Tests: the package's "Independent run" section is a script's own run of the task's
+  commands after this fix round, with exit codes and raw output. `Status: FAIL` (a command
+  failed, the run is missing, or it is older than the code) goes under "New breakage" as
+  Critical, with the status lines quoted. Confirm the tests the fix report names appear in
+  that run's output; a claim in the report that the run does not show is not evidence. Do
+  not re-run the suite. Run one focused test only for a specific doubt.
 
   Output: begin directly, no preamble.
   ### Finding verdicts
