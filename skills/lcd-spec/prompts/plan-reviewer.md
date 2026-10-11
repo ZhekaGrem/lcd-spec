@@ -17,7 +17,14 @@ prompt: |
   Flag only what would make an implementer build the wrong thing or get stuck:
   - spec requirements or scenarios with no task that implements and tests them;
   - grilling decisions the plan ignores or contradicts;
-  - placeholders, steps without real code or commands, "similar to Task N";
+  - placeholders, vague behavior or change boundaries, missing integration points or
+    expected verification outcomes, "similar to Task N" without a concrete contract;
+  - implementation or test bodies copied into Markdown: require source-file references
+    and behavioral scenarios instead. Do not request code in the plan;
+  - a risk prototype presented as proof that the actual implementation passes;
+  - a Verification or Verify command that cannot prove anything when a script runs it
+    unattended: it never exits (watch mode, a dev server), it waits for input, it exits 0
+    on failure, or it does not run the tests the task adds;
   - names, signatures or files used in one task and defined in none, or defined differently;
   - tasks whose Interfaces disagree with their neighbours;
   - file paths that do not match the repository's structure.

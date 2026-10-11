@@ -32,7 +32,7 @@ Anything but `PASS apply` stops you. Go back to the stage it names.
    - one row per pair of tasks that share a file or an interface: what one produces, what
      the other consumes, whether they agree;
    - one row per task: does its text agree with itself (the tests it specifies vs. the
-     code, the files it creates vs. the files it later touches)?
+     required behavior and integration points, the files it creates vs. the files it later touches)?
    - anything the plan mandates that the review rubric treats as a defect.
 
    Rule on each conflict (below) before dispatching. "The scan is clean" without the rows is
@@ -55,8 +55,9 @@ guess. Do not ask "should I continue?" between tasks.
 Always pass a model explicitly. An omitted model inherits the session's, which is
 usually the most expensive.
 
-- Implementer, the plan contains the complete code (transcription + tests): cheapest tier.
-- Implementer working from prose, or touching several files: standard tier.
+- Implementer working from the behavioral plan: standard tier. Write tests and production
+  code in the working branch, and verify that implementation rather than a Markdown copy
+  or an exploratory prototype.
 - Design judgment or broad codebase understanding: most capable tier.
 - Task reviewers: at least standard. Small scoped re-reviews: cheap to standard.
 - Final whole-branch review: most capable.

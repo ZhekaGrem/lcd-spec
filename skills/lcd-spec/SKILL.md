@@ -2,7 +2,7 @@
 name: lcd-spec
 description: >
   Hard-gated spec workflow on OpenSpec: dialogue design, proposal/specs/design, grilling of
-  every decision, detailed TDD plan, pre-apply audit of every claim against the code,
+  every decision, behavioral plan with scope, integrations and verification, pre-apply audit of every claim against the code,
   optional plan review as tester/user/programmer/architect, subagent-driven implementation with a review per task, archive. All change files live and
   are archived in the change directory; project mistakes and user frustration signals are
   tracked in openspec/incidents.md. Use whenever the user wants to plan, specify or build a
