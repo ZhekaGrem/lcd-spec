@@ -88,13 +88,17 @@ artifacts:
 
   - id: plan
     generates: plan.md
-    description: Detailed implementation plan - bite-sized TDD steps per task
+    description: Behavioral implementation plan - scope, integrations and checks per task
     template: plan.md
     instruction: >
       Written by the lcd-spec skill, stage 4. Every task is a `### Task N.M: <name>`
-      section with Files, Interfaces, Verify (the commands verify_run.py runs after the
+      section with Files, Behavior, Boundaries, Interfaces (including integration points),
+      Verify (the commands verify_run.py runs after the
       task) and numbered steps (failing test, run it, minimal code, run it, commit)
-      containing real code and exact commands. Verification lists the commands that prove
+      describing scenarios and expected outcomes with exact commands. Write tests and
+      production code once in the working branch during apply, not in Markdown. Optional
+      short risk prototypes live in separate files; link their question, command, result
+      and limitation without copying their implementation. Verification lists commands that prove
       the whole change, one per list item, in backticks. No placeholders
       (TBD, TODO, "add error handling", "similar to Task N"). Steps are NOT checkboxes -
       progress is tracked in tasks.md.

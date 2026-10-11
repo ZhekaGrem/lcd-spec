@@ -27,6 +27,10 @@ prompt: |
 
   ## Your job
   1. Implement exactly what the task specifies: nothing missing, nothing extra.
+     The plan describes behavior, boundaries and integrations. Write tests and production
+     code once in source files on the working branch; do not copy them into Markdown.
+     If the brief links a risk prototype, use its findings as context and verify the actual
+     implementation independently.
   2. Follow TDD as the steps say: write the failing test, run it and see it fail for the
      expected reason, write the minimal code, run it and see it pass.
   3. While iterating, run the focused test. Run the full relevant suite, and the brief's

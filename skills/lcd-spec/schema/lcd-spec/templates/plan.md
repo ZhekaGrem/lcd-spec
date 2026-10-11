@@ -53,25 +53,31 @@
 **Interfaces:**
 - Consumes: <!-- exact signatures from earlier tasks -->
 - Produces: <!-- exact names and types later tasks rely on -->
+- Integration points: <!-- existing callers, registration points and data flow -->
+
+**Behavior:**
+<!-- Observable outcomes, representative inputs, errors and edge cases. -->
+
+**Boundaries:**
+<!-- What this task changes and what is outside its scope. -->
 
 **Verify:**
 - `<!-- the command that proves this task once it is done, e.g. its test file run to the end -->`
 
-**Step 1: Write the failing test**
+**Step 1: Write the failing test in the working branch**
 
-```
-<!-- real test code -->
-```
+<!-- Test file, scenario, inputs and expected outcomes in prose; no test code here. -->
 
 **Step 2: Run it and watch it fail**
 
 Run: `<!-- exact command -->` - expected: FAIL with <!-- message -->
 
-**Step 3: Write the minimal implementation**
+**Step 3: Implement in the working branch**
 
-```
-<!-- real code -->
-```
+<!-- Describe the required change and integration points; link to files and contracts.
+     Write production code once in source files, without copying it into Markdown.
+     For a risky assumption, optionally link a short prototype in a separate file and
+     record its question, run command, result and limitation. -->
 
 **Step 4: Run it and watch it pass**
 

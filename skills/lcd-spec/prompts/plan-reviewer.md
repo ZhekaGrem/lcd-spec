@@ -20,7 +20,11 @@ prompt: |
   - grilling decisions the plan ignores or contradicts;
   - a lesson the plan's "Lessons applied" assigns to a task that has no step or test for
     it, or waves off as not applicable when the change does touch what the lesson is about;
-  - placeholders, steps without real code or commands, "similar to Task N";
+  - placeholders, vague behavior or change boundaries, missing integration points or
+    expected verification outcomes, "similar to Task N" without a concrete contract;
+  - implementation or test bodies copied into Markdown: require source-file references
+    and behavioral scenarios instead. Do not request code in the plan;
+  - a risk prototype presented as proof that the actual implementation passes;
   - a Verification or Verify command that cannot prove anything when a script runs it
     unattended: it never exits (watch mode, a dev server), it waits for input, it exits 0
     on failure, or it does not run the tests the task adds;

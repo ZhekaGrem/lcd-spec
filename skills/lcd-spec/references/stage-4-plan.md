@@ -1,8 +1,9 @@
 # Stage 4 — Plan
 
-Goal: a plan detailed enough that an implementer subagent with zero context and doubtful
-taste builds the right thing. Assume they are skilled but know nothing about this codebase,
-its tools or its domain, and are weak at test design.
+Goal: describe the required behavior, change boundaries, integration points and checks
+well enough that an implementer can build the right thing without guessing requirements.
+The plan is a behavioral contract, not a second copy of the implementation. Write tests
+and production code once in the working branch during stage 6 and verify those files.
 
 Output: `plan.md` (detailed) and `tasks.md` (tracker), with identical task numbers.
 
@@ -23,8 +24,10 @@ Fold setup, config and docs into the task whose deliverable needs them. Split on
 reviewer could reject one task and approve its neighbour. Each task ends with an
 independently testable deliverable.
 
-Steps inside a task are single actions of 2–5 minutes: write the failing test → run it and
-watch it fail → minimal code → run it and watch it pass → commit.
+Steps describe the intended behavior and test cycle: write the failing test in its source
+file → confirm the expected failure → implement in the working branch → verify → commit.
+Describe test inputs and expected outcomes in prose; do not write test bodies or production
+implementation in Markdown.
 
 ## plan.md
 
@@ -52,17 +55,21 @@ Verification or File Structure is missing or empty, or a task lacks Files or Int
 - **File Structure**: the map from "Before writing tasks", one line per file.
 - **Tasks**: `### Task N.M: <name>`, each with:
   - **Files**: exact paths to create, modify (with line ranges) and test;
+  - **Behavior**: observable outcomes, representative inputs, errors and edge cases;
+  - **Boundaries**: what this task changes and what stays outside its scope;
   - **Interfaces**: what it consumes from earlier tasks and produces for later ones, with
     exact names and types. An implementer sees only their own task, and this is how they
-    learn the neighbours' signatures. A task that shares nothing writes `none`;
+    learn the neighbours' signatures. Name existing callers, registration points and data
+    flow that must be connected. A task that shares nothing writes `none`;
   - **Verify**: the commands that prove this task once it is done, in the same format as
     Verification: normally the task's own test file or module, run to the end. After the
     implementer reports, `verify_run.py` runs them and the reviewer reads that output
     instead of the implementer's summary. A task without the block gets the whole
     Verification list run after it: correct, and slow on a large suite. A step's RED command
     never goes here, it is meant to fail;
-  - **Steps**: numbered `**Step K: …**` paragraphs, not checkboxes, with real code and
-    exact commands with expected output.
+  - **Steps**: numbered `**Step K: …**` paragraphs, not checkboxes, describing actions,
+    acceptance scenarios and exact commands with expected outcomes. Link to source files
+    and interfaces instead of embedding implementation or test code.
 - If a task depends on a moving number (a migration version, a sequence id), add a
   task 0.x that re-checks the number at apply time. A note does not work, because notes
   don't get executed.
@@ -73,9 +80,18 @@ These are plan failures, and gate.py rejects the first three:
 
 - "TBD", "TODO", "implement later", "fill in details", leftover `<!-- template comments -->`;
 - "add appropriate error handling", "handle edge cases", "similar to Task N" (repeat the
-  code: tasks are read out of order);
-- steps that say what to do without showing how;
+  contract or reference its owning file: tasks are read out of order);
+- steps with no concrete behavior, integration point or expected verification outcome;
 - a type, function or file used in one task and defined in none.
+
+### Risk prototypes
+
+When a specific uncertainty needs an experiment, keep a short prototype in a separate
+file under the change directory, for example `prototypes/<risk>.<ext>`. Record only its
+path, the question, run command, observed result and limitation in the plan. Prototypes
+are optional and narrowly scoped; they are not a parallel implementation or evidence
+that production code passes. During apply, adapt or remove them as appropriate and run
+checks against the actual implementation in the working branch.
 
 ## tasks.md
 
